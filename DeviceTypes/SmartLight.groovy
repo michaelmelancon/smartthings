@@ -119,7 +119,4 @@ def reset() {
 
 def sync() {
 	log.debug "Executing 'sync'"
-  	sendEvent(name: "switch", value: device.currentValue("switch"))
-    setLevel(device.currentValue("level"))
-    setColor([saturation: device.currentValue("saturation"), hue: device.currentValue("hue")])
 }

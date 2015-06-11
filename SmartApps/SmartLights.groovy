@@ -32,6 +32,10 @@ preferences {
 	section("Select the smart bulb(s) connected to the selected smart switch.") {
 		input "smartBulbs", "capability.switchLevel", label: "Which smart bulbs?", multiple: true, required: true
 	}
+
+    section("Select the lighting control style.") {
+    	input "controlStyle", "enum", options:["full color", "color temp", "dimmer"]
+    }
 }
 
 def installed() {
@@ -47,23 +51,61 @@ def updated() {
 }
 
 def initialize() {
-    def master = getChildDevice("LG0001")
+    def master = getChildDevice("SL001")
     if (!master)
-    	master = addChildDevice("melancon", "Light Group", "LG0001", null)
-	subscribe(master, "switch.on", onHandler)
+    	master = addChildDevice("melancon", "Smart Light", "SL001", null, [label: name, completedSetup: true])
+    subscribe(master, "switch.on", onHandler)
 	subscribe(master, "switch.off", offHandler)
 	subscribe(master, "level", dimHandler)
     subscribe(master, "hue", hueHandler)
     subscribe(master, "saturation", saturationHandler)
     subscribe(master, "color", colorHandler)
+    subscribeToCommand(master, "sync", syncHandler)
+    subscribe(smartSwitch, "switch.on", powerOnHandler)
+    if (smartSwitch.currentSwitch == "on") {
+    	master.on()
+        master.setLevel(100);
+    }
+    else {
+        master.setLevel(100);
+    	master.off()
+    }
+}
+
+def getControlStyle() {
+	controlStyle
 }
 
 def onHandler(evt) {
 	log.debug evt.value
-	smartSwitch.on()
+    smartSwitch.on()
     smartBulbs.each {
     	if (it.hasCapability("Switch"))
         	it.on()
+    }
+}
+
+def powerOnHandler(evt) {
+	log.debug "power on - about to sync"
+    def master = getChildDevice("SL001")
+    master.on()
+    sync(master)
+}
+
+def sync(child) {
+    if (child.currentSwitch == "on") {
+    	smartSwitch.on()
+        smartBulbs.on()
+        smartBulbs.each {
+        	if (it.hasCapability("Color Control")) {
+                it.setHue(child.currentHue, [delay:50])
+                it.setSaturation(child.currentSaturation, [delay:50])
+            }
+        }
+       	smartBulbs.setLevel(child.currentLevel, [delay:50])
+    }
+    else {
+    	smartBulbs.off()
     }
 }
 
@@ -105,4 +147,10 @@ def saturationHandler(evt) {
     	if (it.hasCapability("Color Control"))
         	it.setSaturation(evt.numericValue)
     }
+}
+
+def syncHandler(evt) {
+	log.debug "Syncing"
+    def master = getChildDevice("SL001")
+	sync(master)
 }
