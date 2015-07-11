@@ -33,15 +33,32 @@ def configurationPage() {
         section("Select the smart switches that control power to smart bulb(s).") {
             input "smartSwitches", "capability.switch", title: "Which smart switch(es)?", multiple: true, required: true, submitOnChange: true
         }
-        smartSwitches.eachWithIndex { s, i ->
+        smartSwitches.each { s ->
 			section("Configure a Smart Light for ${s}") {
-	        	input "smartLightName${i}", "text", title: "Name this smart light", required: true, defaultValue: "${s} Smart Light"
-            	input "icon${i}", "icon", title: "Choose an icon", required: false
-				input "smartBulbs${i}", "capability.switchLevel", title: "Choose the smart bulb(s)", multiple: true, required: true
-                input "controlStyle${i}", "enum", title: "Choose a control style", required: true, defaultValue: "dimmer", options: ["full color", "color temp", "dimmer"]
+	        	input "smartLightName${getIndex(s.id)}", "text", title: "Name this smart light", required: true, defaultValue: "${s} Smart Light"
+            	input "icon${getIndex(s.id)}", "icon", title: "Choose an icon", required: false
+				input "smartBulbs${getIndex(s.id)}", "capability.switchLevel", title: "Choose the smart bulb(s)", multiple: true, required: true
+                input "controlStyle${getIndex(s.id)}", "enum", title: "Choose a control style", required: true, defaultValue: "dimmer", options: ["full color", "color temp", "dimmer"]
             }
         }
     }
+}
+
+def getIndex(switchId) {
+    if (state.smartLightInfo == null)
+	    state.smartLightInfo = [:]
+    def info = state.smartLightInfo[(switchId)]
+    if (!info) {
+    	info = [switchId: switchId, index: nextIndex()]
+	    state.smartLightInfo[(switchId)] = info
+    }
+    info.index
+}
+
+def nextIndex() {
+    def max = state.smartLightInfo.values().collect{it.index}.max()
+    max = (!max) ? 1 : max + 1
+    (0..max).find{index -> !state.smartLightInfo.values().any {it.index == index}}
 }
 
 def installed() {
@@ -63,7 +80,7 @@ def initialize() {
         log.debug info
       	def sl = getChildDevice(info.deviceNetworkId)
         if (!sl)
-            sl = addChildDevice('melancon', info.type, info.deviceNetworkId, null, [completedSetup:true, icon:info.icon])
+            sl = addChildDevice('melancon', info.type, info.deviceNetworkId, null, [completedSetup:true])
         sl.name = info.name
       	sl.displayName = info.name
         subscribe(it, 'switch.on', powerOnHandler, [filterEvents: false])
@@ -83,12 +100,10 @@ private cleanUpRemovedSmartLights() {
 
 private updateSmartLightInfo()
 {
-	if (!state.smartLightInfo)
-    	state.smartLightInfo = [:]
     def lightInfo = [:]
-    smartSwitches.eachWithIndex { it, i ->
+    smartSwitches.each {
     	def oldInfo = state.smartLightInfo[it.id]
-    	def newInfo = createSmartLightInfo(it.id, i)
+    	def newInfo = createSmartLightInfo(it.id, oldInfo.index)
         if (!oldInfo || oldInfo.type != newInfo.type) {
         	def sl = getChildDevice(newInfo.deviceNetworkId)
             if (sl) {
@@ -101,7 +116,7 @@ private updateSmartLightInfo()
     state.smartLightInfo = lightInfo
 }
 
-private createSmartLightInfo(switchId, index) {
+private createSmartLightInfo(String switchId, int index) {
 	[switchId: switchId, index: index, deviceNetworkId: getDeviceNetworkId(switchId), name: settings."smartLightName${index}", type: getSmartLightType(settings."controlStyle${index}"), icon: settings."icon${index}"]
 }
 
@@ -109,7 +124,7 @@ def getSmartLightInfo(smartLight) {
 	state.smartLightInfo.values().find { it -> it.deviceNetworkId == smartLight.deviceNetworkId }
 }
 
-private getDeviceNetworkId(switchId) {
+private getDeviceNetworkId(String switchId) {
 	"${switchId}/SL".toString()
 }
 
