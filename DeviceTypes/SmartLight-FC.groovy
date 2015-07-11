@@ -1,5 +1,5 @@
 /**
- *  Light Group
+ *  Smart Light - FC
  *
  *  Copyright 2015 Michael Melancon
  *
@@ -14,22 +14,21 @@
  *
  */
 metadata {
-	definition (name: "Light Group", namespace: "melancon", author: "Michael Melancon") {
-		capability "Switch Level"
+	definition (name: "Smart Light - FC", namespace: "melancon", author: "Michael Melancon") {
 		capability "Actuator"
-		capability "Color Control"
-		capability "Switch"
 		capability "Sensor"
+		capability "Switch"
+		capability "Switch Level"
+		capability "Color Control"
 
-        command "reset"
         command "sync"
+        command "resetColor"
+        command "setColorTemperature", ["number"]
+
+        attribute "colorTemperature", "number"
 	}
 
-	simulator {
-		// TODO: define status and reply messages here
-	}
-
-	standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
+	standardTile("switch", "device.switch", width:2, height: 2, canChangeIcon: true) {
 		state "on", label:'${name}', action:"switch.off", icon:"st.lights.multi-light-bulb-on", backgroundColor:"#79b821", nextState:"turningOff"
 		state "off", label:'${name}', action:"switch.on", icon:"st.lights.multi-light-bulb-off", backgroundColor:"#ffffff", nextState:"turningOn"
 		state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.multi-light-bulb-on", backgroundColor:"#79b821", nextState:"turningOff"
@@ -44,29 +43,21 @@ metadata {
 		state "default", label:"Sync", action:"sync", icon:"st.secondary.refresh-icon"
 	}
 
-	controlTile("setLevel", "device.level", "slider", height: 1, width: 2, range:"(0..100)") {
+	controlTile("levelControl", "device.level", "slider", height: 1, width: 3, range:"(0..100)") {
 		state "default", action:"switch level.setLevel"
 	}
 
-	valueTile("level", "device.level") {
-		state "default", label: 'Level ${currentValue}%'
+	controlTile("colorTemperatureControl", "device.colorTemperature", "slider", height: 1, width: 3, range:"(153..500)") {
+		state "default", action:"setColorTemperature"
 	}
 
-	controlTile("setColor", "device.color", "color", height: 2, width: 2) {
-		state "default", action:"setColor"
-	}
-
-	valueTile("hue", "device.hue") {
-		state "default", label: 'Hue ${currentValue}%'
-	}
-
-	valueTile("saturation", "device.saturation") {
-		state "default", label: 'Sat ${currentValue}%'
+	controlTile("colorControl", "device.color", "color", height: 3, width: 3) {
+		state "default", action:"color control.setColor"
 	}
 
 	main(["switch"])
 
-	details(["switch", "setLevel", "setColor", "sync", "reset", "hue", "saturation"])
+	details( ["switch", "sync", "levelControl", "reset", "colorControl", "colorTemperatureControl"])
 }
 
 def parse(description) {
@@ -81,45 +72,53 @@ def parse(description) {
 
 def on() {
 	log.debug "Executing 'on'"
+    parent.on(device)
 	sendEvent(name: "switch", value: "on")
 }
 
 def off() {
 	log.debug "Executing 'off'"
+    parent.off(device)
 	sendEvent(name: "switch", value: "off")
 }
 
 def setLevel(percent) {
 	log.debug "Executing 'setLevel($percent)'"
+    parent.setLevel(device, percent)
 	sendEvent(name: "level", value: percent)
+}
+
+def setColorTemperature(mirek) {
+	log.debug "Executing 'setColorTemperature($mirek)'"
+    parent.setColorTemperature(device, mirek)
+    sendEvent(name: "colorTemperature", value: mirek)
 }
 
 def setSaturation(percent) {
 	log.debug "Executing 'setSaturation($percent)'"
+    parent.setSaturation(device, percent)
 	sendEvent(name: "saturation", value: percent)
 }
 
 def setHue(percent) {
 	log.debug "Executing 'setHue($percent)'"
+    parent.setHue(device, percent)
 	sendEvent(name: "hue", value: percent)
 }
 
 def setColor(color) {
 	log.debug "Executing 'setColor($color)'"
+    parent.setColor(device, color)
     if (color?.hex != null) { sendEvent(name: "color", value: color.hex)}
 	if (color?.hue != null) { sendEvent(name: "hue", value: color.hue)}
 	if (color?.saturation != null) { sendEvent(name: "saturation", value: color.saturation)}
 }
 
-def reset() {
-	log.debug "Executing 'reset'"
-    def color = [saturation: 0, hue: 0, hex: '#ffffff', red: 255, green: 255, blue: 255, alpha: 1]
-    setColor(color)
+def resetColor() {
+	log.debug "Executing 'resetColor'"
+    setColor([saturation: 0, hue: 0, hex: '#ffffff', red: 255, green: 255, blue: 255, alpha: 1])
 }
 
 def sync() {
 	log.debug "Executing 'sync'"
-  	sendEvent(name: "switch", value: device.currentValue("switch"))
-    setLevel(device.currentValue("level"))
-    setColor([saturation: device.currentValue("saturation"), hue: device.currentValue("hue")])
 }

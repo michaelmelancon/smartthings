@@ -1,5 +1,5 @@
 /**
- *  Smart Light
+ *  Smart Light - CT
  *
  *  Copyright 2015 Michael Melancon
  *
@@ -14,14 +14,12 @@
  *
  */
 metadata {
-	definition (name: "Smart Light", namespace: "melancon", author: "Michael Melancon") {
+	definition (name: "Smart Light - CT", namespace: "melancon", author: "Michael Melancon") {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
 		capability "Switch Level"
-		capability "Color Control"
 
-        command "reset"
         command "sync"
         command "setColorTemperature", ["number"]
 
@@ -35,10 +33,6 @@ metadata {
 		state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.multi-light-bulb-off", backgroundColor:"#ffffff", nextState:"turningOn"
 	}
 
-	standardTile("reset", "device.level", decoration: "flat", inactiveLabel: false) {
-		state "default", label:"Reset Color", action:"reset", icon:"st.illuminance.illuminance.dark"
-	}
-
 	standardTile("sync", "device.level", decoration: "flat", inactiveLabel: false) {
 		state "default", label:"Sync", action:"sync", icon:"st.secondary.refresh-icon"
 	}
@@ -47,30 +41,22 @@ metadata {
 		state "default", action:"switch level.setLevel"
 	}
 
-	controlTile("colorTemperatureControl", "device.colorTemperature", "slider", height: 1, width: 3, range:"(153..500)") {
+	controlTile("colorTemperatureControl", "device.colorTemperature", "slider", height: 1, width: 3, range:"(153..500)",
+    	backgroundColors:[
+					[value: 150, color: "#bc2323"],
+					[value: 250, color: "#d04e00"],
+					[value: 300, color: "#f1d801"],
+					[value: 325, color: "#44b621"],
+					[value: 350, color: "#90d2a7"],
+					[value: 400, color: "#1e9cbb"],
+					[value: 500, color: "#153591"]
+				]) {
 		state "default", action:"setColorTemperature"
-	}
-
-	controlTile("colorControl", "device.color", "color", height: 3, width: 3) {
-		state "default", action:"color control.setColor"
 	}
 
 	main(["switch"])
 
-/* If device type handlers supported rendering ui per device this would work, but the device property isn't ready at this point */
-	details(forControlStyle())
-}
-
-def forControlStyle() {
-	def controlStyle = device?.name?.substring(0, device?.name?.indexOf("-"))
-    def details = ["switch", "sync", "levelControl"]
-    if (controlStyle == "color temp") {
-    	details << ["reset", "colorTemperatureControl"]
-    }
-    else if (controlStyle == "full color") {
-    	details << ["colorControl"]
-    }
-    details
+	details(["switch", "sync", "levelControl", "colorTemperatureControl"])
 }
 
 def parse(description) {
@@ -107,32 +93,6 @@ def setColorTemperature(mirek) {
     sendEvent(name: "colorTemperature", value: mirek)
 }
 
-def setSaturation(percent) {
-	log.debug "Executing 'setSaturation($percent)'"
-    parent.setSaturation(device, percent)
-	sendEvent(name: "saturation", value: percent)
-}
-
-def setHue(percent) {
-	log.debug "Executing 'setHue($percent)'"
-    parent.setHue(device, percent)
-	sendEvent(name: "hue", value: percent)
-}
-
-def setColor(color) {
-	log.debug "Executing 'setColor($color)'"
-    parent.setColor(device, color)
-    if (color?.hex != null) { sendEvent(name: "color", value: color.hex)}
-	if (color?.hue != null) { sendEvent(name: "hue", value: color.hue)}
-	if (color?.saturation != null) { sendEvent(name: "saturation", value: color.saturation)}
-}
-
-def reset() {
-	log.debug "Executing 'reset'"
-    setColor([saturation: 0, hue: 0, hex: '#ffffff', red: 255, green: 255, blue: 255, alpha: 1])
-}
-
 def sync() {
-	log.debug "Asking service manager to perform sync"
-    parent.sync(device)
+	log.debug "Executing 'sync'"
 }
