@@ -78,11 +78,11 @@ def initialize() {
     smartSwitches.each {
     	def info = state.smartLightInfo[it.id]
         log.debug info
-      	def sl = getChildDevice(info.deviceNetworkId)
+    	def sl = getChildDevice(info.deviceNetworkId)
         if (!sl)
             sl = addChildDevice('melancon', info.type, info.deviceNetworkId, null, [completedSetup:true])
         sl.name = info.name
-      	sl.displayName = info.name
+    	sl.displayName = info.name
         subscribe(it, 'switch.on', powerOnHandler, [filterEvents: false])
         subscribe(it, 'switch.off', powerOffHandler, [filterEvents: false])
         subscribeToCommand(sl, 'sync', syncHandler)
@@ -132,7 +132,7 @@ private getSmartLightType(controlStyle) {
 	String smartLightType = 'Smart Light - DM'
 	switch (controlStyle) {
     	case 'full color':
- 			smartLightType = 'Smart Light - FC'
+			smartLightType = 'Smart Light - FC'
             break
         case 'color temp':
         	smartLightType = 'Smart Light - CT'
@@ -230,7 +230,7 @@ def sync(sl) {
                 it.setColor(sl.currentColor, [delay:50])
             }
         }
-       	smartBulbs.setLevel(sl.currentLevel, [delay:50])
+        smartBulbs.setLevel(sl.currentLevel, [delay:50])
     }
     else {
     	smartBulbs.off()
