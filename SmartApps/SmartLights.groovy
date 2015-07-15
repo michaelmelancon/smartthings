@@ -21,7 +21,7 @@ definition(
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Categories/lightsAndSwitches.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Categories/lightsAndSwitches@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Categories/lightsAndSwitches@2x.png")
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Categories/lightsAndSwitches@3x.png")
 
 
     preferences {
@@ -73,44 +73,40 @@ definition(
 
     def initialize() {
         updateSmartLightInfo()
+        cleanUpRemovedSmartLights()
+    }
+
+    private updateSmartLightInfo() {
+    	def oldLightInfo = state.smartLightInfo.clone()
         smartSwitches.each {
-            def info = state.smartLightInfo[it.id]
-            log.debug info
-            def sl = getChildDevice(info.deviceNetworkId)
-            if (!sl)
-            sl = addChildDevice('melancon', info.type, info.deviceNetworkId, null, [completedSetup:true, name:"${it} Smart Light", displayName:"${it} Smart Light"])
+            def oldInfo = oldLightInfo[it.id]
+            def newInfo = createSmartLightInfo(it.id, oldInfo.index)
+            def sl = getChildDevice(newInfo.deviceNetworkId)
+            if (oldInfo.type != newInfo.type) {
+                if (sl) {
+                    deleteChildDevice(newInfo.deviceNetworkId)
+                    sl = addSmartLight(newInfo, sl.displayName)
+                }
+                else
+                	sl = addSmartLight(newInfo, "${it} Smart Light")
+            }
+            state.smartLightInfo[newInfo.switchId] = newInfo
             subscribe(it, 'switch.on', powerOnHandler, [filterEvents: false])
             subscribe(it, 'switch.off', powerOffHandler, [filterEvents: false])
             subscribeToCommand(sl, 'sync', syncHandler)
         }
-        cleanUpRemovedSmartLights()
+    }
+
+    private addSmartLight(info, name) {
+    	addChildDevice('melancon', info.type, info.deviceNetworkId, null, [completedSetup:true, name:name, displayName:name])
     }
 
     private cleanUpRemovedSmartLights() {
         def deviceIds = state.smartLightInfo.values().collect { it.deviceNetworkId }
         def removedDevices = getChildDevices().findAll { !deviceIds.contains(it.deviceNetworkId) }
         removedDevices.each {
-            unsubscribe(it)
             deleteChildDevice(it.deviceNetworkId)
         }
-    }
-
-    private updateSmartLightInfo()
-    {
-        def lightInfo = [:]
-        smartSwitches.each {
-            def oldInfo = state.smartLightInfo[it.id]
-            def newInfo = createSmartLightInfo(it.id, oldInfo.index)
-            if (oldInfo.type != newInfo.type) {
-                def sl = getChildDevice(newInfo.deviceNetworkId)
-                if (sl) {
-                    unsubscribe(sl)
-                    deleteChildDevice(newInfo.deviceNetworkId)
-                }
-            }
-            lightInfo[newInfo.switchId] = newInfo
-        }
-        state.smartLightInfo = lightInfo
     }
 
     private createSmartLightInfo(String switchId, int index) {
