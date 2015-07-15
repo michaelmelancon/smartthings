@@ -43,8 +43,9 @@ definition(
     }
 
     def getIndex(switchId) {
-        if (state.smartLightInfo == null)
-        state.smartLightInfo = [:]
+        if (state.smartLightInfo == null) {
+          state.smartLightInfo = [:]
+        }
         def info = state.smartLightInfo[(switchId)]
         if (!info) {
             info = [switchId: switchId, index: nextIndex()]
@@ -87,8 +88,9 @@ definition(
                     deleteChildDevice(newInfo.deviceNetworkId)
                     sl = addSmartLight(newInfo, sl.displayName)
                 }
-                else
+                else {
                 	sl = addSmartLight(newInfo, "${it} Smart Light")
+                }
             }
             state.smartLightInfo[newInfo.switchId] = newInfo
             subscribe(it, 'switch.on', powerOnHandler, [filterEvents: false])
@@ -125,17 +127,17 @@ definition(
         String smartLightType = 'Smart Light - DM'
         switch (controlStyle) {
             case 'full color':
-            smartLightType = 'Smart Light - FC'
-            break
+              smartLightType = 'Smart Light - FC'
+              break
             case 'color temp':
-            smartLightType = 'Smart Light - CT'
-            break
+              smartLightType = 'Smart Light - CT'
+              break
         }
         smartLightType
     }
 
     def powerOnHandler(evt) {
-        def info = state.smartLightInfo[evt.id]
+        def info = state.smartLightInfo[evt.device.id]
         if  (info) {
             def sl = getChildDevice(info.deviceNetworkId)
             log.debug "${evt.device} powered on; synchronizing ${sl} to previous state."
@@ -145,85 +147,88 @@ definition(
     }
 
     def powerOffHandler(evt) {
-        def info = state.smartLightInfo[evt.id]
+        def info = state.smartLightInfo[evt.device.id]
         if  (info) {
             getChildDevice(info.deviceNetworkId).off()
         }
     }
 
     def syncHandler(evt) {
-        sync(evt.device)
+        sync(evt)
     }
 
     def on(sl) {
-        def info = getSmartLightInfo(sl)
+        def info = getSmartLightInfo(sl.device)
         smartSwitches.find{it.id == info.switchId}.on()
         settings."smartBulbs${info.index}".on()
     }
 
     def off(sl) {
-        def info = getSmartLightInfo(sl)
+        def info = getSmartLightInfo(sl.device)
         settings."smartBulbs${info.index}".off()
     }
 
     def setLevel(sl, percent) {
-        log.debug "${sl} Dim level: ${percent}"
-        def info = getSmartLightInfo(sl)
+        log.debug "${sl.device} Dim level: ${percent}"
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.setLevel(percent)
     }
 
     def setHue(sl, percent) {
-        log.debug "${sl} Hue: ${percent}"
-        def info = getSmartLightInfo(sl)
+        log.debug "${sl.device} Hue: ${percent}"
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
-            if (it.hasCapability("Color Control"))
-            it.setHue(percent)
+            if (it.hasCapability("Color Control")) {
+              it.setHue(percent)
+            }
         }
     }
 
     def setSaturation(sl, percent) {
-        log.debug "${sl} Saturation: ${percent}"
-        def info = getSmartLightInfo(sl)
+        log.debug "${sl.device} Saturation: ${percent}"
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
-            if (it.hasCapability("Color Control"))
-            it.setSaturation(percent)
+            if (it.hasCapability("Color Control")) {
+              it.setSaturation(percent)
+            }
         }
     }
 
     def setColor(sl, color) {
-        color.remove("level")
-        def info = getSmartLightInfo(sl)
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
-            if (it.hasCapability("Color Control"))
-            it.setColor(color)
+            if (it.hasCapability("Color Control")) {
+              it.setColor(color)
+            }
         }
     }
 
     def setColorTemperature(sl, mirek) {
-        def info = getSmartLightInfo(sl)
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
-            if (it.hasCommand("setColorTemperature"))
-            it.setColorTemperature(mirek)
+            if (it.hasCommand("setColorTemperature")) {
+              it.setColorTemperature(mirek)
+            }
         }
     }
 
     def sync(sl) {
-        def info = getSmartLightInfo(sl)
+        def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         if (sl.currentSwitch == "on") {
             smartSwitches.find { it.id == info.switchId}.on()
             smartBulbs.on()
+            smartBulbs.setLevel(sl.currentLevel, [delay:50])
             smartBulbs.each {
                 if (it.hasCapability("Color Control")) {
                     it.setColor(sl.currentColor, [delay:50])
                 }
             }
-            smartBulbs.setLevel(sl.currentLevel, [delay:50])
         }
         else {
             smartBulbs.off()

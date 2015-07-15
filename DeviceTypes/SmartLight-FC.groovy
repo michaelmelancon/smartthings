@@ -67,44 +67,46 @@ def parse(description) {
 
 def on() {
 	log.debug "Executing 'on'"
-	parent.on(device)
+	parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
 def off() {
 	log.debug "Executing 'off'"
-	parent.off(device)
+	parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
 def setLevel(percent) {
 	log.debug "Executing 'setLevel($percent)'"
-	parent.setLevel(device, percent)
+	parent.setLevel(this, percent)
 	sendEvent(name: "level", value: percent)
 }
 
 def setColorTemperature(mirek) {
 	log.debug "Executing 'setColorTemperature($mirek)'"
-	parent.setColorTemperature(device, mirek)
+	parent.setColorTemperature(this, mirek)
 	sendEvent(name: "colorTemperature", value: mirek)
 }
 
 def setSaturation(percent) {
 	log.debug "Executing 'setSaturation($percent)'"
-	parent.setSaturation(device, percent)
+	parent.setSaturation(this, percent)
 	sendEvent(name: "saturation", value: percent)
 }
 
 def setHue(percent) {
 	log.debug "Executing 'setHue($percent)'"
-	parent.setHue(device, percent)
+	parent.setHue(this, percent)
 	sendEvent(name: "hue", value: percent)
 }
 
 def setColor(color) {
+	color.remove("level")
 	log.debug "Executing 'setColor($color)'"
+	parent.setColor(this, color)
+	sendEvent(name: "color", value: color.hex)
 	sendEvent(name: "color", value: color)
-	parent.setColor(device, color)
 }
 
 def resetColor() {

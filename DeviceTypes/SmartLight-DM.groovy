@@ -48,19 +48,19 @@ def parse(description) {
 
 def on() {
 	log.debug "Executing 'on'"
-	parent.on(device)
+	parent.on(this)
 	sendEvent(name: "switch", value: "on")
 }
 
 def off() {
 	log.debug "Executing 'off'"
-	parent.off(device)
+	parent.off(this)
 	sendEvent(name: "switch", value: "off")
 }
 
 def setLevel(percent) {
 	log.debug "Executing 'setLevel($percent)'"
-	parent.setLevel(device, percent)
+	parent.setLevel(this, percent)
 	sendEvent(name: "level", value: percent)
 }
 
