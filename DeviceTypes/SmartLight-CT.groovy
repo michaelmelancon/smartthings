@@ -63,27 +63,27 @@ def parse(description) {
 }
 
 def on() {
-	log.debug "Executing 'on'"
-	parent.on(this)
+	log.debug "Requesting 'on'"
 	sendEvent(name: "switch", value: "on")
+	parent.on(this)
 }
 
 def off() {
-	log.debug "Executing 'off'"
-	parent.off(this)
+	log.debug "Requesting 'off'"
 	sendEvent(name: "switch", value: "off")
+	parent.off(this)
 }
 
 def setLevel(percent) {
-	log.debug "Executing 'setLevel($percent)'"
-	parent.setLevel(this, percent)
+	log.debug "Requesting 'setLevel($percent)'"
 	sendEvent(name: "level", value: percent)
+	parent.setLevel(this, percent)
 }
 
 def setColorTemperature(mirek) {
-	log.debug "Executing 'setColorTemperature($mirek)'"
-	parent.setColorTemperature(this, mirek)
+	log.debug "Requesting 'setColorTemperature($mirek)'"
 	sendEvent(name: "colorTemperature", value: mirek)
+	parent.setColorTemperature(this, mirek)
 }
 
 def sync() {

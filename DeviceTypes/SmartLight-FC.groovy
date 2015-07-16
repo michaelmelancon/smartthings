@@ -51,8 +51,8 @@ metadata {
 		state "default", action:"setColorTemperature"
 	}
 
-	controlTile("colorControl", "device.color.hex", "color", height: 3, width: 3) {
-		state "default", action:"color control.setColor"
+	controlTile("colorControl", "device.color", "color", height: 3, width: 3) {
+		state "default", action:"setColorWithoutLevel"
 	}
 
 	main(["switch"])
@@ -66,47 +66,53 @@ def parse(description) {
 }
 
 def on() {
-	log.debug "Executing 'on'"
-	parent.on(this)
+	log.debug "Requesting 'on'"
 	sendEvent(name: "switch", value: "on")
+	parent.on(this)
 }
 
 def off() {
-	log.debug "Executing 'off'"
-	parent.off(this)
+	log.debug "Requesting 'off'"
 	sendEvent(name: "switch", value: "off")
+	parent.off(this)
 }
 
 def setLevel(percent) {
-	log.debug "Executing 'setLevel($percent)'"
-	parent.setLevel(this, percent)
+	log.debug "Requesting 'setLevel($percent)'"
 	sendEvent(name: "level", value: percent)
+	parent.setLevel(this, percent)
 }
 
 def setColorTemperature(mirek) {
-	log.debug "Executing 'setColorTemperature($mirek)'"
-	parent.setColorTemperature(this, mirek)
+	log.debug "Requesting 'setColorTemperature($mirek)'"
 	sendEvent(name: "colorTemperature", value: mirek)
+	parent.setColorTemperature(this, mirek)
 }
 
 def setSaturation(percent) {
-	log.debug "Executing 'setSaturation($percent)'"
-	parent.setSaturation(this, percent)
+	log.debug "Requesting 'setSaturation($percent)'"
 	sendEvent(name: "saturation", value: percent)
+	parent.setSaturation(this, percent)
 }
 
 def setHue(percent) {
-	log.debug "Executing 'setHue($percent)'"
-	parent.setHue(this, percent)
+	log.debug "Requesting 'setHue($percent)'"
 	sendEvent(name: "hue", value: percent)
+	parent.setHue(this, percent)
+}
+
+def setColorWithoutLevel(color) {
+	color.remove("level")
+    setColor(color)
 }
 
 def setColor(color) {
-	color.remove("level")
-	log.debug "Executing 'setColor($color)'"
-	parent.setColor(this, color)
-	sendEvent(name: "color", value: color.hex)
+	log.debug "Requesting 'setColor($color)'"
 	sendEvent(name: "color", value: color)
+    if (color.hue) sendEvent(name: "hue", value: color.hue)
+    if (color.saturation) sendEvent(name: "saturation", value: color.saturation)
+    if (color.level) sendEvent(name: "level", value: color.level)
+    parent.setColor(this, color)
 }
 
 def resetColor() {

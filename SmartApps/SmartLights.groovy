@@ -95,7 +95,7 @@ definition(
             state.smartLightInfo[newInfo.switchId] = newInfo
             subscribe(it, 'switch.on', powerOnHandler, [filterEvents: false])
             subscribe(it, 'switch.off', powerOffHandler, [filterEvents: false])
-            subscribeToCommand(sl, 'sync', syncHandler)
+            subscribeToCommand(sl, 'sync', syncHandler, [filterEvents: false])
         }
     }
 
@@ -142,7 +142,7 @@ definition(
             def sl = getChildDevice(info.deviceNetworkId)
             log.debug "${evt.device} powered on; synchronizing ${sl} to previous state."
             sl.on()
-            sl.sync([delay:50])
+            sync(sl)
         }
     }
 
@@ -154,16 +154,18 @@ definition(
     }
 
     def syncHandler(evt) {
-        sync(evt)
+        sync(evt.device)
     }
 
     def on(sl) {
+    	log.debug "${sl.device} 'on'"
         def info = getSmartLightInfo(sl.device)
         smartSwitches.find{it.id == info.switchId}.on()
         settings."smartBulbs${info.index}".on()
     }
 
     def off(sl) {
+    	log.debug "${sl.device} 'off'"
         def info = getSmartLightInfo(sl.device)
         settings."smartBulbs${info.index}".off()
     }
@@ -198,6 +200,7 @@ definition(
     }
 
     def setColor(sl, color) {
+        log.debug "${sl.device} Color: ${color}"
         def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
@@ -208,6 +211,7 @@ definition(
     }
 
     def setColorTemperature(sl, mirek) {
+        log.debug "${sl.device} Color Temperature: ${mirek}"
         def info = getSmartLightInfo(sl.device)
         def smartBulbs = settings."smartBulbs${info.index}"
         smartBulbs.each {
@@ -218,7 +222,8 @@ definition(
     }
 
     def sync(sl) {
-        def info = getSmartLightInfo(sl.device)
+        log.debug "${sl} Synchronizing"
+        def info = getSmartLightInfo(sl)
         def smartBulbs = settings."smartBulbs${info.index}"
         if (sl.currentSwitch == "on") {
             smartSwitches.find { it.id == info.switchId}.on()
